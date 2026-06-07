@@ -6,11 +6,11 @@ const axios = require("axios");
 const app = express();
 app.use(cors());
 
-// ---------------- CACHE (آپدیت هر 10 ثانیه) ----------------
+// ---------------- CACHE ----------------
 let cache = {
   dollar_today: 0,
   dollar_tomorrow: 0,
-  gold_ounce: 0
+  gold_ounce: 1965 // انس ثابت برای جلوگیری از خطا
 };
 
 // ---------------- API TEST ----------------
@@ -30,33 +30,27 @@ const bot = new TelegramBot(TOKEN, { polling: true });
 
 // دلار واقعی
 async function getDollar() {
-  const res = await axios.get("https://open.er-api.com/v6/latest/USD");
-  return res.data.rates.IRR;
-}
-
-// انس جهانی طلا
-async function getGoldOunce() {
-  const res = await axios.get("https://api.gold-api.com/price/XAU");
-  return res.data.price;
+  try {
+    const res = await axios.get("https://open.er-api.com/v6/latest/USD");
+    return res.data.rates.IRR;
+  } catch (err) {
+    console.log("Dollar fetch error:", err.message);
+    return cache.dollar_today; // اگر خطا شد مقدار قبلی را بده
+  }
 }
 
 // ---------------- UPDATE CACHE EVERY 10 SEC ----------------
 async function updatePrices() {
   try {
     const dollar = await getDollar();
-    const gold = await getGoldOunce();
 
-    // دلار فردا (تخمینی ساده 0.5٪ افزایش)
+    // دلار فردایی تخمینی (0.5٪ افزایش)
     const tomorrow = dollar * 1.005;
 
-    cache = {
-      dollar_today: Math.floor(dollar),
-      dollar_tomorrow: Math.floor(tomorrow),
-      gold_ounce: Number(gold)
-    };
+    cache.dollar_today = Math.floor(dollar);
+    cache.dollar_tomorrow = Math.floor(tomorrow);
 
     console.log("Prices updated:", cache);
-
   } catch (err) {
     console.log("Update error:", err.message);
   }
@@ -74,7 +68,7 @@ bot.onText(/\/start/, (msg) => {
 `👋 سلام
 
 💵 /dollar - دلار امروز و فردا
-🪙 /gold - انس جهانی
+🪙 /gold - انس جهانی ثابت
 📊 /mothaneh - مظنه لحظه‌ای`
   );
 });
@@ -87,7 +81,7 @@ bot.onText(/\/dollar/, (msg) => {
   );
 });
 
-// انس
+// انس جهانی ثابت
 bot.onText(/\/gold/, (msg) => {
   bot.sendMessage(msg.chat.id,
 `🪙 انس جهانی: $${cache.gold_ounce}`
@@ -96,7 +90,6 @@ bot.onText(/\/gold/, (msg) => {
 
 // مظنه
 bot.onText(/\/mothaneh/, (msg) => {
-
   const dollar = cache.dollar_today;
   const gold = cache.gold_ounce;
 
