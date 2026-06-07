@@ -1,12 +1,18 @@
 {
   "name": "dollar-gold-api",
   "version": "1.0.0",
+  "description": "API و ربات تلگرام برای قیمت دلار و طلا",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "bot": "node bot.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "cors": "^2.8.5"
-  }
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "author": "Saeid",
+  "license": "MIT"
 }
