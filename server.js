@@ -6,55 +6,79 @@ const axios = require("axios");
 const app = express();
 app.use(cors());
 
-// 🌐 API
+// ---------------- API TEST ----------------
 app.get("/", (req, res) => {
   res.json({ status: "online" });
 });
 
-app.get("/prices", (req, res) => {
-  res.json({
-    dollar_today: 175000,
-    dollar_tomorrow: 176500,
-    ounce_gold: 4328
-  });
-});
-
-// 🤖 Telegram Bot
-const TOKEN = process.env.BOT_TOKEN || "YOUR_TOKEN";
+// ---------------- TELEGRAM BOT ----------------
+const TOKEN = process.env.BOT_TOKEN;
 const bot = new TelegramBot(TOKEN, { polling: true });
 
-const API_URL = "https://dollargoldapi.onrender.com/prices";
+// ---------------- FUNCTIONS ----------------
 
-// start
+// دلار واقعی
+async function getDollar() {
+  const res = await axios.get("https://open.er-api.com/v6/latest/USD");
+  return res.data.rates.IRR; // ریال
+}
+
+// انس جهانی طلا
+async function getGoldOunce() {
+  const res = await axios.get("https://api.metals.live/v1/spot/gold");
+  return res.data[0].price;
+}
+
+// ---------------- COMMANDS ----------------
+
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id,
 `👋 سلام
 
-/dollar - قیمت دلار
-/mothaneh - مظنه طلا`
+💵 /dollar - دلار واقعی
+🪙 /gold - انس جهانی
+📊 /mothaneh - مظنه واقعی`
   );
 });
 
 // دلار
 bot.onText(/\/dollar/, async (msg) => {
-  const res = await axios.get(API_URL);
-  bot.sendMessage(msg.chat.id, `💵 دلار: ${res.data.dollar_today}`);
+  try {
+    const dollar = await getDollar();
+    bot.sendMessage(msg.chat.id, `💵 دلار واقعی:\n${Math.floor(dollar)} ریال`);
+  } catch {
+    bot.sendMessage(msg.chat.id, "❌ خطا در گرفتن دلار");
+  }
+});
+
+// انس طلا
+bot.onText(/\/gold/, async (msg) => {
+  try {
+    const gold = await getGoldOunce();
+    bot.sendMessage(msg.chat.id, `🪙 انس جهانی:\n$${gold}`);
+  } catch {
+    bot.sendMessage(msg.chat.id, "❌ خطا در انس طلا");
+  }
 });
 
 // مظنه
 bot.onText(/\/mothaneh/, async (msg) => {
-  const res = await axios.get(API_URL);
+  try {
+    const dollar = await getDollar();
+    const gold = await getGoldOunce();
 
-  const dollar = res.data.dollar_today;
-  const ounce = res.data.ounce_gold;
+    // فرمول مظنه
+    const mothaneh = (dollar * gold) / 9.5742;
 
-  const mothaneh = (dollar * ounce) / 9.5742;
-
-  bot.sendMessage(msg.chat.id,
-`📊 مظنه:
+    bot.sendMessage(msg.chat.id,
+`📊 مظنه واقعی:
 ${Math.floor(mothaneh)} تومان`
-  );
+    );
+  } catch {
+    bot.sendMessage(msg.chat.id, "❌ خطا در محاسبه مظنه");
+  }
 });
 
+// ---------------- START SERVER ----------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("Server running"));
