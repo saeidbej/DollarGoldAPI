@@ -1,11 +1,10 @@
 {
-  "name": "dollar-gold-api",
+  "name": "dollar-gold",
   "version": "1.0.0",
   "description": "API و ربات تلگرام برای قیمت دلار و طلا",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "bot": "node bot.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
